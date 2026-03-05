@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data visualisation · refined</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
+<style>
+body {
+    background: #a7cfef;
+    margin: 0;
+    font-family: "Lexend", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+.container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.headline {
+    font-family: "Pacifico";
+    font-size: 30pt;
+    font-weight: 700;
+    text-align: center;
+    color: #5792f2;
+    margin-top: 40px;
+    margin-bottom: 20px;
+}
+.line {
+    border: none;
+    height: 2px;
+    background: rgba(0,0,0,0.2);
+    width: 90%;
+    margin: 20px auto;
+}
+.buttons-row {
+    display: flex;
+    justify-content: center;
+    margin: 30px 0 10px 0;
+}
+.pill-container {
+    position: relative;
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 999px;
+    background: #5792f2;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+.pill-container button,
+.pill-container .info-tab {
+    position: relative;
+    background: none;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    z-index: 2;
+    color: white;
+    font-family: "Lexend", sans-serif;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+.pill-container .info-tab {
+    padding: 12px 20px;
+    font-weight: 600;
+    font-size: 20px;
+}
+.pill-container button.active {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.selector {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 6px;
+    height: calc(100% - 12px);
+    background: rgba(255,255,255,0.35);
+    backdrop-filter: blur(10px);
+    border-radius: 999px;
+    transition: left 0.35s cubic-bezier(.25,.8,.25,1), width 0.35s cubic-bezier(.25,.8,.25,1);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    z-index: 1;
+    border: 1px solid rgba(255,255,255,0.3);
+    pointer-events: none;
+}
+.info-panel-wrapper {
+    overflow: hidden;
+    transition: height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease;
+    width: fit-content;
+    max-width: 90%;
+    margin: 0 auto;
+    height: 0;
+    opacity: 0;
+    border-radius: 40px; /* Gleiche Rundung wie Panel */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2); /* Schatten am Wrapper */
+}
+.info-panel-wrapper.visible {
+    opacity: 1;
+}
+.info-panel {
+    width: 500px;
+    max-width: 100%;
+    background: rgba(255,255,255,0.35);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 40px;
+    padding: 20px 28px;
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #1e2b3c;
+    position: relative;
+    will-change: transform, opacity;
+    /* Kein eigener Schatten mehr */
+}
+.info-panel h4 {
+    margin: 0 0 8px 0;
+    font-family: "Lexend", sans-serif;
+    font-weight: 600;
+    font-size: 18px;
+    color: #0f2a44;
+    border-bottom: 1px solid rgba(255,255,255,0.3);
+    padding-bottom: 5px;
+    padding-right: 30px;
+}
+.info-panel p {
+    margin: 8px 0;
+    font-size: 15px;
+    line-height: 1.5;
+}
+.info-panel .format-example {
+    background: rgba(255,255,255,0.3);
+    border-radius: 24px;
+    padding: 12px 16px;
+    font-family: monospace;
+    font-size: 14px;
+    margin-top: 12px;
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #1d3557;
+    word-break: break-word;
+    backdrop-filter: blur(4px);
+}
+.close-info {
+    position: absolute;
+    top: 12px;
+    right: 18px;
+    background: rgba(255,255,255,0.3);
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #2c3e50;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+    transition: 0.2s;
+    border: 1px solid rgba(255,255,255,0.4);
+}
+.close-info:hover {
+    background: rgba(255,255,255,0.5);
+    transform: scale(1.1);
+}
+.upload-section {
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: margin 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.upload-box {
+    width: 80%;
+    height: 280px;
+    margin: 20px auto;
+    background: rgba(255,255,255,0.3);
+    border-radius: 30px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: .3s;
+    border: 1px solid rgba(255,255,255,0.3);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+.upload-box:hover {
+    background: rgba(255,255,255,0.4);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    transform: translateY(-5px);
+}
+@keyframes successFlash {
+    0% { background: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.3); }
+    20% { background: rgba(200, 240, 200, 0.4); border-color: rgba(76, 175, 80, 0.6); }
+    100% { background: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.3); }
+}
+@keyframes errorFlash {
+    0% { background: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.3); }
+    20% { background: rgba(255, 200, 200, 0.4); border-color: rgba(244, 67, 54, 0.6); }
+    100% { background: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.3); }
+}
+.upload-box.success-flash { animation: successFlash 1.2s ease-out forwards; }
+.upload-box.error-flash { animation: errorFlash 1.2s ease-out forwards; }
+.upload-box .icon {
+    font-family: "Lilita One", sans-serif;
+    font-style: normal;
+    font-size: 60px;
+    line-height: 1;
+    margin-bottom: 15px;
+    font-weight: 300;
+    transition: all 0.4s cubic-bezier(0.25,0.8,0.25,1);
+}
+.upload-box .icon.default { color: #5792f2; }
+.upload-box:hover .icon.default { transform: scale(1.15) translateY(-10px); color: #5792f2; }
+.upload-box .icon.checkmark { color: #4CAF50; animation: checkmarkAppear 0.5s cubic-bezier(0.175,0.885,0.32,1.275); }
+.upload-box .icon.xmark { color: #F44336; animation: xmarkAppear 0.5s cubic-bezier(0.175,0.885,0.32,1.275); }
+@keyframes checkmarkAppear {
+    0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes xmarkAppear {
+    0% { transform: scale(0) rotate(180deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes slideUp {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDown {
+    0% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(30px); }
+}
+.upload-text {
+    margin-top: 5px;
+    font-size: 18px;
+    color: #333;
+    font-weight: 500;
+    transition: all 0.4s cubic-bezier(0.25,0.8,0.25,1);
+}
+.upload-text.filename { color: #1c1c1c !important; }
+.upload-text.fade-out { opacity: 0; transform: translateY(-10px); }
+.upload-text.fade-in { opacity: 1; transform: translateY(0); }
+.sub-text {
+    font-size: 14px;
+    opacity: 0.6;
+    margin-top: 5px;
+    transition: all 0.4s cubic-bezier(0.25,0.8,0.25,1);
+}
+input[type=file] { display: none; }
+.create-btn-container {
+    width: 80%;
+    margin: 10px auto 30px auto;
+    display: flex;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+}
+.create-btn-container.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    animation: slideUp 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+}
+.create-btn-container.hide { animation: slideDown 0.3s ease forwards; }
+.create-btn {
+    background: #5792f2;
+    color: white;
+    border: none;
+    padding: 16px 48px;
+    font-size: 20px;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    font-family: "Lexend", sans-serif;
+    letter-spacing: 1px;
+    box-shadow: 0 15px 30px rgba(87,146,242,0.35);
+    transition: all 0.9s cubic-bezier(0.25,0.1,0.15,1);
+    border: 1px solid rgba(255,255,255,0.3);
+    backdrop-filter: blur(5px);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+.create-btn::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(115deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.5) 45%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.5) 55%, rgba(255,255,255,0.15) 80%, rgba(255,255,255,0) 100%);
+    transform: rotate(20deg) translateY(-40%) translateX(-30%);
+    transition: transform 2.2s cubic-bezier(0.19,1,0.22,1);
+    z-index: -1;
+    opacity: 0;
+    pointer-events: none;
+}
+.create-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%);
+    opacity: 0;
+    transition: opacity 1.4s ease;
+    z-index: -1;
+    pointer-events: none;
+}
+.create-btn:hover {
+    background: rgba(87, 146, 242, 0.45);
+    color: #ffffff;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.35), 0 0 20px rgba(255,255,255,0.6);
+    border-color: rgba(255,255,255,0.95);
+    box-shadow: 0 30px 45px rgba(87,146,242,0.4), inset 0 -8px 20px rgba(255,255,255,0.6), inset 0 8px 20px rgba(255,255,255,0.6), 0 0 0 2px rgba(255,255,255,0.3);
+    transform: scale(1.08) translateY(-6px);
+    backdrop-filter: blur(15px);
+    transition: all 1.2s cubic-bezier(0.22,1,0.36,1);
+}
+.create-btn:hover::before {
+    transform: rotate(20deg) translateY(80%) translateX(80%);
+    opacity: 1;
+    transition: transform 2.8s cubic-bezier(0.25,1,0.3,1), opacity 1s ease;
+}
+.create-btn:hover::after {
+    opacity: 1;
+    background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 40%, rgba(255,255,255,0) 80%);
+    transition: opacity 1.2s ease, background 1.5s ease;
+}
+.create-btn:active {
+    transform: translateY(3px) scale(0.97);
+    box-shadow: 0 10px 20px rgba(87,146,242,0.3), inset 0 -3px 10px rgba(255,255,255,0.3);
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+.create-btn:focus { outline: none; }
+.loading-overlay {
+    position: fixed;
+    top:0; left:0; width:100%; height:100%;
+    background:#a7cfef; display:flex; align-items:center; justify-content:center;
+    z-index:9999; opacity:0; pointer-events:none; transition:opacity 0.3s;
+}
+.loader { display:flex; gap:15px; }
+.loader span { width:20px; height:20px; background:#5792f2; border-radius:50%; animation:pulse 0.6s infinite ease-in-out; }
+.loader span:nth-child(2) { animation-delay:0.2s; }
+.loader span:nth-child(3) { animation-delay:0.4s; }
+@keyframes pulse { 0%,80%,100% { transform:scale(0); opacity:0.3; } 40% { transform:scale(1); opacity:1; } }
+</style>
+</head>
+<body>
+<div class="container" id="mainContainer">
+    <h1 class="headline">Data visualisation</h1>
+    <hr class="line">
+    <div class="buttons-row">
+        <div class="pill-container" id="pillContainer">
+            <div class="selector" id="selector"></div>
+            <button class="active">JSON</button>
+            <button>CSV</button>
+            <button>XML</button>
+            <div class="info-tab" id="infoTab">i</div>
+        </div>
+    </div>
+    <div class="info-panel-wrapper" id="infoPanelWrapper">
+        <div class="info-panel" id="infoPanel">
+            <button class="close-info" id="closeInfoBtn">&times;</button>
+            <h4 id="infoTitle">JSON format</h4>
+            <p id="infoDesc">Hierarchical key‑value data. Usually an array of objects with x, y, z fields.</p>
+            <div class="format-example" id="infoExample">[ {"x": 10, "y": 20, "z": 30}, {"x": 15, "y": 18, "z": 25} ]</div>
+        </div>
+    </div>
+    <div class="upload-section" id="uploadSection">
+        <div class="upload-box" id="uploadBox">
+            <div class="icon default" id="uploadIcon">+</div>
+            <div class="upload-text" id="uploadText">Upload your JSON file</div>
+            <div class="sub-text" id="subText">Drag & Drop or Click to Upload</div>
+            <input type="file" id="fileInput" accept="">
+        </div>
+        <div class="create-btn-container" id="createBtnContainer">
+            <button class="create-btn" id="createBtn">Create Visualisation</button>
+        </div>
+    </div>
+</div>
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loader"><span></span><span></span><span></span></div>
+</div>
+<script>
+const buttons = document.querySelectorAll(".pill-container button");
+const selector = document.getElementById("selector");
+const infoTab = document.getElementById("infoTab");
+const infoPanelWrapper = document.getElementById("infoPanelWrapper");
+const infoPanel = document.getElementById("infoPanel");
+const closeInfoBtn = document.getElementById("closeInfoBtn");
+const uploadBox = document.getElementById("uploadBox");
+const fileInput = document.getElementById("fileInput");
+const uploadText = document.getElementById("uploadText");
+const subText = document.getElementById("subText");
+const uploadIcon = document.getElementById("uploadIcon");
+const createBtnContainer = document.getElementById("createBtnContainer");
+const createBtn = document.getElementById("createBtn");
+const infoTitle = document.getElementById("infoTitle");
+const infoDesc = document.getElementById("infoDesc");
+const infoExample = document.getElementById("infoExample");
+let currentFileType = "json";
+let currentFile = null;
+let infoVisible = false;
+let animating = false;
+let hoverTimeout = null;
+
+const fileTypes = {
+    json: ['.json', 'application/json'],
+    csv: ['.csv', 'text/csv'],
+    xml: ['.xml', 'text/xml', 'application/xml']
+};
+
+const infoContent = {
+    json: { title: "JSON format", desc: "Hierarchical key‑value data. Usually an array of objects with x, y, z fields.", example: '[ {"x": 10, "y": 20, "z": 30}, {"x": 15, "y": 18, "z": 25} ]' },
+    csv: { title: "CSV format", desc: "Comma‑separated values. First row headers, then rows with x,y,z numbers.", example: 'x,y,z\n10,20,30\n15,18,25\n22,27,33' },
+    xml: { title: "XML format", desc: "Nested elements with attributes. Often <point x=\"...\" y=\"...\" z=\"...\" />.", example: '<points>\n  <point x="10" y="20" z="30"/>\n  <point x="15" y="18" z="25"/>\n</points>' }
+};
+
+function updateInfoContent(type) {
+    const c = infoContent[type];
+    infoTitle.innerText = c.title;
+    infoDesc.innerText = c.desc;
+    infoExample.innerText = c.example;
+}
+
+// Animierte Höhenänderung des Info-Panels bei Inhaltwechsel (nur wenn sichtbar)
+function animatePanelHeightChange(updateFn) {
+    if (!infoVisible || animating) {
+        updateFn();
+        return;
+    }
+    animating = true;
+    const wrapper = infoPanelWrapper;
+    const currentHeight = wrapper.offsetHeight;
+    wrapper.style.height = currentHeight + 'px';
+    wrapper.offsetHeight;
+    updateFn();
+    wrapper.style.height = 'auto';
+    const targetHeight = wrapper.offsetHeight;
+    wrapper.style.height = currentHeight + 'px';
+    wrapper.offsetHeight;
+    wrapper.style.height = targetHeight + 'px';
+    const onTransitionEnd = () => {
+        wrapper.style.height = 'auto';
+        wrapper.classList.add('visible');
+        wrapper.removeEventListener('transitionend', onTransitionEnd);
+        animating = false;
+    };
+    wrapper.addEventListener('transitionend', onTransitionEnd, { once: true });
+}
+
+function showInfoPanel() {
+    if (infoVisible || animating) return;
+    animating = true;
+    const wrapper = infoPanelWrapper;
+    wrapper.classList.add('visible');
+    wrapper.style.height = 'auto';
+    const targetHeight = wrapper.offsetHeight;
+    wrapper.style.height = '0';
+    wrapper.offsetHeight;
+    wrapper.style.height = targetHeight + 'px';
+    const onTransitionEnd = () => {
+        wrapper.style.height = 'auto';
+        infoVisible = true;
+        animating = false;
+        wrapper.removeEventListener('transitionend', onTransitionEnd);
+    };
+    wrapper.addEventListener('transitionend', onTransitionEnd, { once: true });
+}
+
+function hideInfoPanel() {
+    if (!infoVisible || animating) return;
+    animating = true;
+    const wrapper = infoPanelWrapper;
+    const currentHeight = wrapper.offsetHeight;
+    wrapper.style.height = currentHeight + 'px';
+    wrapper.offsetHeight;
+    wrapper.style.height = '0';
+    const onTransitionEnd = () => {
+        wrapper.classList.remove('visible');
+        wrapper.style.height = '0';
+        infoVisible = false;
+        animating = false;
+        wrapper.removeEventListener('transitionend', onTransitionEnd);
+    };
+    wrapper.addEventListener('transitionend', onTransitionEnd, { once: true });
+}
+
+// Hover über Upload-Box schließt Info-Panel
+uploadBox.addEventListener('mouseenter', () => {
+    if (infoVisible && !animating) {
+        // Kleiner Delay, damit nicht bei jeder Berührung sofort schließt
+        if (hoverTimeout) clearTimeout(hoverTimeout);
+        hoverTimeout = setTimeout(() => {
+            hideInfoPanel();
+        }, 50);
+    }
+});
+
+uploadBox.addEventListener('mouseleave', () => {
+    if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+        hoverTimeout = null;
+    }
+});
+
+function moveSelector(btn) {
+    selector.style.width = btn.offsetWidth + "px";
+    selector.style.left = btn.offsetLeft + "px";
+    buttons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const fileType = btn.textContent.toLowerCase();
+    currentFileType = fileType;
+    fileInput.accept = fileTypes[fileType].join(',');
+    animateTextChange(uploadText, `Upload your ${fileType.toUpperCase()} file`);
+    resetUploadBox();
+    hideCreateButton();
+    currentFile = null;
+    animatePanelHeightChange(() => updateInfoContent(fileType));
+}
+
+function animateTextChange(el, newText) {
+    el.classList.add('fade-out');
+    setTimeout(() => {
+        el.textContent = newText;
+        el.classList.remove('fade-out');
+        el.classList.add('fade-in');
+    }, 200);
+    setTimeout(() => el.classList.remove('fade-in'), 600);
+}
+
+function resetUploadBox() {
+    uploadIcon.className = 'icon default';
+    uploadIcon.textContent = '+';
+    uploadBox.classList.remove('success-flash', 'error-flash');
+    uploadText.style.color = '#333';
+    uploadText.classList.remove('filename');
+    subText.textContent = 'Drag & Drop or Click to Upload';
+    subText.style.color = '';
+}
+
+function hideCreateButton() {
+    createBtnContainer.classList.remove('show');
+    createBtnContainer.classList.add('hide');
+    setTimeout(() => createBtnContainer.style.display = 'none', 300);
+}
+
+function showCreateButton() {
+    createBtnContainer.style.display = 'flex';
+    void createBtnContainer.offsetWidth;
+    createBtnContainer.classList.remove('hide');
+    createBtnContainer.classList.add('show');
+}
+
+function showSuccess(file) {
+    currentFile = file;
+    uploadIcon.className = 'icon checkmark';
+    uploadIcon.textContent = '✓';
+    uploadBox.classList.add('success-flash');
+    uploadText.textContent = file.name;
+    uploadText.style.color = '#1c1c1c';
+    uploadText.classList.add('filename');
+    subText.textContent = '✓ File ready for visualisation';
+    subText.style.color = '#2e7d32';
+    showCreateButton();
+    setTimeout(() => uploadBox.classList.remove('success-flash'), 1200);
+}
+
+function showError() {
+    currentFile = null;
+    uploadIcon.className = 'icon xmark';
+    uploadIcon.textContent = '✕';
+    uploadBox.classList.add('error-flash');
+    animateTextChange(uploadText, `Upload your ${currentFileType.toUpperCase()} file`);
+    uploadText.style.color = '#c62828';
+    uploadText.classList.remove('filename');
+    subText.textContent = '✕ Invalid file type. Please select a ' + currentFileType.toUpperCase() + ' file';
+    subText.style.color = '#c62828';
+    hideCreateButton();
+    setTimeout(() => {
+        if (!fileInput.files.length || !isValidFileType(fileInput.files[0])) resetUploadBox();
+        uploadBox.classList.remove('error-flash');
+    }, 3000);
+}
+
+function isValidFileType(file) {
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    const type = file.type;
+    return fileTypes[currentFileType].some(t => ext === t || type === t || type.includes(currentFileType));
+}
+
+function validateAndProcessFile(file) {
+    if (file && isValidFileType(file)) { showSuccess(file); fileInput.files = fileInput.files; return true; }
+    else if (file) { showError(); fileInput.value = ''; return false; }
+    return false;
+}
+
+infoTab.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (infoVisible) hideInfoPanel(); else showInfoPanel();
+});
+
+closeInfoBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideInfoPanel();
+});
+
+document.addEventListener('click', (e) => {
+    if (!infoTab.contains(e.target) && !infoPanelWrapper.contains(e.target) && !e.target.closest('.pill-container button') && infoVisible) {
+        hideInfoPanel();
+    }
+});
+
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        moveSelector(buttons[0]);
+        createBtnContainer.style.display = 'none';
+        infoPanelWrapper.style.height = '0';
+    }, 50);
+});
+
+window.addEventListener('resize', () => {
+    const active = document.querySelector(".pill-container button.active") || buttons[0];
+    moveSelector(active);
+});
+
+buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        moveSelector(btn);
+        fileInput.value = '';
+        resetUploadBox();
+        hideCreateButton();
+        currentFile = null;
+    });
+});
+
+fileInput.addEventListener('change', (e) => validateAndProcessFile(e.target.files[0]));
+
+uploadBox.addEventListener('dragover', (e) => e.preventDefault());
+uploadBox.addEventListener('dragleave', () => uploadBox.style.background = "rgba(255,255,255,0.3)");
+uploadBox.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadBox.style.background = "rgba(255,255,255,0.3)";
+    const file = e.dataTransfer.files[0];
+    if (validateAndProcessFile(file)) fileInput.files = e.dataTransfer.files;
+    else fileInput.value = '';
+});
+
+uploadBox.addEventListener('click', () => fileInput.click());
+
+createBtn.addEventListener('click', () => {
+    if (!currentFile) return;
+    const overlay = document.getElementById('loadingOverlay');
+    document.querySelector('.container').style.display = 'none';
+    overlay.style.opacity = '1';
+    overlay.style.pointerEvents = 'auto';
+    setTimeout(() => {
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
+    }, 1500);
+});
+
+fileInput.accept = fileTypes.json.join(',');
+updateInfoContent('json');
+</script>
+</body>
+</html>
