@@ -115,7 +115,9 @@ body.loaded {
 
 /* ── 3D Canvas ───────────────────────────────────────── */
 #three-container {
-    width: 100%;
+    width: 90%;
+    margin: 0 auto; /* Zentriert den Container */
+
     height: clamp(340px, 55vh, 600px);
     border-radius: 30px;
     overflow: hidden;
@@ -127,9 +129,11 @@ body.loaded {
     position: relative;
     cursor: grab;
 }
+
 #three-container:active {
     cursor: grabbing;
 }
+
 #three-container canvas {
     display: block;
     width: 100% !important;
