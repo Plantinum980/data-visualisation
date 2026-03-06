@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CanSat Visualisation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="vis-style.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="loading-overlay visible" id="loadingOverlay">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:18px">
+        <div class="loader"><span></span><span></span><span></span></div>
+        <p style="color:#5792f2;font-family:Lexend,sans-serif;font-size:13px;font-weight:500;opacity:0.8" id="loadMsg">Parsing 3D models…</p>
+    </div>
+</div>
+
+<div class="container" id="mainContainer">
+    <h1 class="headline">Visualisation</h1>
+    <hr class="line">
+
+    <div class="controls-bar">
+        <div class="pill-container">
+            <button id="btnOrbit" class="active" title="Toggle auto-orbit">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="10" ry="4"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                <span>Orbit</span>
+            </button>
+            <button id="btnPlayPause" title="Play / Pause flight animation">
+                <svg id="iconPlay"  width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                <svg id="iconPause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                <span id="playLabel">Play</span>
+            </button>
+            <button id="btnReset" title="Reset view and animation">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+                <span>Reset</span>
+            </button>
+            <button id="btnTrail" class="active" title="Toggle flight trail">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <span>Trail</span>
+            </button>
+            <div class="selector" id="selector"></div>
+        </div>
+    </div>
+
+    <div id="three-container">
+        <div class="canvas-hint" id="canvasHint">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v10"/><path d="M10 10.5a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2V17a6 6 0 0 0 6 6h2a6 6 0 0 0 6-6v-5a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2"/></svg>
+            Drag to rotate · Scroll to zoom
+        </div>
+        <div id="phaseTag" style="position:absolute;top:16px;left:50%;transform:translateX(-50%);
+             background:rgba(255,255,255,0.22);backdrop-filter:blur(8px);
+             border:1px solid rgba(255,255,255,0.35);color:rgba(20,30,50,0.85);
+             font-size:12px;font-weight:600;padding:5px 16px;border-radius:999px;
+             pointer-events:none;transition:opacity 0.5s;opacity:0;letter-spacing:0.5px;z-index:10">
+        </div>
+    </div>
+
+    <div class="stats-bar" id="statsBar">
+        <div class="stat-item">
+            <span class="stat-label">Points</span>
+            <span class="stat-value" id="statPoints">—</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-label">Altitude</span>
+            <span class="stat-value" id="statAlt">—</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-label">Format</span>
+            <span class="stat-value" id="statFormat">Demo</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-label">Status</span>
+            <span class="stat-value" id="statStatus" style="transition:color 0.3s">Bereit</span>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+window._modelsReady = function(msg) {
+    const ov = document.getElementById('loadingOverlay');
+    const lm = document.getElementById('loadMsg');
+    if (msg) lm.textContent = msg;
+    ov.style.transition = 'opacity 0.5s';
+    ov.style.opacity = '0';
+    setTimeout(() => { ov.style.display = 'none'; }, 520);
+};
+</script>
+<script src="vis.js"></script>
+</body>
+</html>
