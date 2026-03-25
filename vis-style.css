@@ -116,8 +116,7 @@ body.loaded {
 /* ── 3D Canvas ───────────────────────────────────────── */
 #three-container {
     width: 90%;
-    margin: 0 auto; /* Zentriert den Container */
-
+    margin: 0 auto;
     height: clamp(340px, 55vh, 600px);
     border-radius: 30px;
     overflow: hidden;

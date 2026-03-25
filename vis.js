@@ -169,9 +169,6 @@ function normalisePoints(pts) {
     maxZ - minZ
   ) || 1;
   const scale = 20 / maxRange;
-  // Altitude (z) maps to Y. minZ → 0, maxZ → scaled peak.
-  // The last raw point has z = minZ (landed), so its normalised y = 0.
-  // We later apply FLIGHT_Y_OFFSET so that y=0 maps to groundY exactly.
   return pts.map(p => new THREE.Vector3(
     (p.x - cx) * scale,
     (p.z - minZ) * scale,
@@ -184,7 +181,6 @@ const rawAlts  = rawPoints.map(p => p.z);
 const maxAlt   = Math.max(...rawAlts);
 const minAlt   = Math.min(...rawAlts);
 const apogeeIdx = rawAlts.indexOf(maxAlt);
-// Separation happens slightly before apogee (~85% of ascent) for more realism
 const separationIdx = Math.floor(apogeeIdx * 0.85);
 
 // ── Scene ─────────────────────────────────────────────────────
@@ -221,8 +217,6 @@ scene.add(fill);
 const rocketLight = new THREE.PointLight(0xff6600, 0.0, 20);
 scene.add(rocketLight);
 
-// Ground sits at world Y = 0. Normalised points with y=0 (z=minZ in raw data)
-// will land exactly on the ground because FLIGHT_Y_OFFSET = groundY = 0.
 const groundY = 0.0;
 
 const grid = new THREE.GridHelper(80, 50, 0x5588bb, 0x3366aa);
@@ -251,13 +245,9 @@ edgeRing.position.y = groundY + 0.01;
 scene.add(edgeRing);
 
 // ── Launch Pad ────────────────────────────────────────────────
-// The rocket's cansat slot is at local Y = CANSAT_LOCAL_Y above its origin.
-// At launch, cansat should be at flightPoints[0] = (x, 0, z).
-// So rocketGroup.position.y = flightPoints[0].y - CANSAT_LOCAL_Y
-const NOZZLE_OFFSET  = 4.25;   // distance from rocket origin down to nozzle tip
-const CANSAT_LOCAL_Y = 2.0;    // distance from rocket origin up to cansat slot
+const NOZZLE_OFFSET  = 4.25;
+const CANSAT_LOCAL_Y = 2.0;
 
-// Launch pad sits on the ground, rocket rests on it
 const PAD_HEIGHT = 0.18;
 const padY = groundY + PAD_HEIGHT / 2;
 
@@ -268,17 +258,9 @@ const padMesh = new THREE.Mesh(
 padMesh.position.set(flightPoints[0].x, padY, flightPoints[0].z);
 scene.add(padMesh);
 
-// Rocket origin Y at launch: nozzle sits on the pad top, so origin = padY + PAD_HEIGHT/2 + NOZZLE_OFFSET
 const LAUNCH_ROCKET_Y = groundY + PAD_HEIGHT + NOZZLE_OFFSET;
+const FLIGHT_Y_OFFSET = groundY;
 
-// FLIGHT_Y_OFFSET: added to every normalised flightPoint.y to get world cansat position.
-// We want: last point (normalised y=0) → world y = groundY = 0
-// So FLIGHT_Y_OFFSET = groundY = 0.
-// The first point also has y=0 (same raw z=0), so it starts on the ground too —
-// the rocket lifts it up visually via LAUNCH_ROCKET_Y placement, which is separate.
-const FLIGHT_Y_OFFSET = groundY; // = 0
-
-// Resting positions for separated parts (after they fall)
 const BOTTOM_REST_Y = groundY + 2.2;
 const TOP_REST_Y    = groundY + 1.8;
 
@@ -288,7 +270,6 @@ let trailVisible = true;
 
 function buildTrail() {
   if (trailLine) { scene.remove(trailLine); trailLine.geometry.dispose(); trailLine.material.dispose(); }
-  // Shift trail points to world space
   const worldPts = flightPoints.map(p => new THREE.Vector3(p.x, p.y + FLIGHT_Y_OFFSET, p.z));
   const geo = new THREE.BufferGeometry().setFromPoints(worldPts);
   const colors = [];
@@ -408,9 +389,6 @@ rocketGroup.add(topGroup);
 rocketGroup.add(cansatGroup);
 scene.add(rocketGroup);
 
-// ── Helper: world position of cansat slot given rocket position/orientation ──
-// cansatSlot_world = rocketGroup.position + rotate(0, CANSAT_LOCAL_Y, 0) by quaternion
-// Inverse: rocketGroup.position = cansatSlot_world - rotate(0, CANSAT_LOCAL_Y, 0)
 function placeRocketForCansat(cansatWorldPos, quaternion) {
   const slotLocal = new THREE.Vector3(0, CANSAT_LOCAL_Y, 0).applyQuaternion(quaternion);
   rocketGroup.position.copy(cansatWorldPos).sub(slotLocal);
@@ -586,7 +564,6 @@ function resetAnimation() {
   topVel.set(0,0,0);
   bottomVel.set(0,0,0);
 
-  // Place rocket on launchpad: origin at LAUNCH_ROCKET_Y, pointing straight up
   rocketGroup.position.set(flightPoints[0].x, LAUNCH_ROCKET_Y, flightPoints[0].z);
   rocketGroup.quaternion.identity();
   rocketGroup.rotation.set(0,0,0);
@@ -613,7 +590,7 @@ let prevMouse = { x: 0, y: 0 };
 let hintHidden = false;
 
 const hint = document.getElementById("canvasHint");
-hint.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>&nbsp;LMB: orbit &nbsp;·&nbsp; RMB: pan &nbsp;·&nbsp; Scroll: zoom`;
+hint.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>&nbsp;Left click: orbit &nbsp;·&nbsp; Right click: pan &nbsp;·&nbsp; Scroll: zoom`;
 
 container.addEventListener("contextmenu", e => e.preventDefault());
 container.addEventListener("mousedown",  e => {
@@ -668,7 +645,6 @@ window.addEventListener("touchmove", e => {
 
 // ── Stats ─────────────────────────────────────────────────────
 document.getElementById("statPoints").textContent = flightPoints.length;
-document.getElementById("statAlt").textContent    = Math.round(maxAlt - minAlt) + " m";
 document.getElementById("statFormat").textContent = dataFormat;
 
 // ── Controls ──────────────────────────────────────────────────
@@ -699,7 +675,7 @@ function setStatus(text, color) {
   statStatus.textContent = text;
   statStatus.style.color = color || "#1e2b3c";
 }
-setStatus("Bereit", "#4CAF50");
+setStatus("Ready", "#4CAF50");
 
 btnOrbit.addEventListener("click", () => {
   orbitActive = !orbitActive;
@@ -713,11 +689,11 @@ btnPlayPause.addEventListener("click", () => {
   playLabel.textContent   = animPlaying ? "Pause" : "Play";
   moveSelector(btnPlayPause);
   if (animPlaying) {
-    setStatus("Fliegt", "#5792f2");
-    if (animProgress === 0) setPhase("Aufstieg");
+    setStatus("Flying", "#5792f2");
+    if (animProgress === 0) setPhase("Ascent");
   } else {
-    setStatus(animProgress > 0 ? "Pausiert ⏸" : "Bereit", animProgress > 0 ? "#e8a020" : "#4CAF50");
-    setPhase(animProgress > 0 ? "Pausiert" : "");
+    setStatus(animProgress > 0 ? "Paused ⏸" : "Ready", animProgress > 0 ? "#e8a020" : "#4CAF50");
+    setPhase(animProgress > 0 ? "Paused" : "");
   }
 });
 btnReset.addEventListener("click", () => {
@@ -729,7 +705,7 @@ btnReset.addEventListener("click", () => {
   orbitActive = true;
   updateActiveButtons(); moveSelector(btnReset);
   setPhase("");
-  setStatus("Bereit", "#4CAF50");
+  setStatus("Ready", "#4CAF50");
 });
 btnTrail.addEventListener("click", () => {
   trailVisible = !trailVisible;
@@ -760,20 +736,16 @@ function animate() {
   // ── Flight animation ──
   if (animPlaying && flightPoints.length > 1) {
     animProgress += delta * ANIM_SPEED;
-    if (animProgress >= 1) { resetAnimation(); animProgress = 0; setStatus("Bereit", "#4CAF50"); }
+    if (animProgress >= 1) { resetAnimation(); animProgress = 0; setStatus("Ready", "#4CAF50"); }
 
     const rawIdx = animProgress * (flightPoints.length - 1);
     const idx0   = Math.floor(rawIdx);
     const idx1   = Math.min(idx0 + 1, flightPoints.length - 1);
     const frac   = rawIdx - idx0;
 
-    // Interpolated flight point (normalised space)
     const fp = new THREE.Vector3().lerpVectors(flightPoints[idx0], flightPoints[idx1], frac);
-
-    // World position of the cansat slot: directly from flight data + vertical offset
     const cansatWorld = new THREE.Vector3(fp.x, fp.y + FLIGHT_Y_OFFSET, fp.z);
 
-    // Flight direction for rocket orientation (look-ahead)
     const lookAheadIdx = Math.min(idx0 + 2, flightPoints.length - 1);
     const lookBehindIdx = Math.max(0, idx0 - 1);
     _dir.subVectors(flightPoints[lookAheadIdx], flightPoints[lookBehindIdx]).normalize();
@@ -783,7 +755,6 @@ function animate() {
       separated = false;
       separationTriggered = false;
 
-      // Orient rocket along flight direction (smooth)
       if (_dir.lengthSq() > 0.0001) {
         const targetQuat = new THREE.Quaternion().setFromUnitVectors(
           new THREE.Vector3(0, 1, 0),
@@ -792,11 +763,8 @@ function animate() {
         rocketGroup.quaternion.slerp(targetQuat, 0.15);
       }
 
-      // Place rocket so its cansat slot is exactly at cansatWorld
       placeRocketForCansat(cansatWorld, rocketGroup.quaternion);
 
-      // CRITICAL: Clamp so nozzle never goes below ground (prevents rocket going into floor at t=0)
-      // The nozzle tip is NOZZLE_OFFSET below the rocket origin along its local Y axis.
       const nozzleLocal = new THREE.Vector3(0, -NOZZLE_OFFSET, 0).applyQuaternion(rocketGroup.quaternion);
       const nozzleWorldY = rocketGroup.position.y + nozzleLocal.y;
       const minNozzleY = groundY + PAD_HEIGHT + 0.05;
@@ -804,9 +772,8 @@ function animate() {
         rocketGroup.position.y += minNozzleY - nozzleWorldY;
       }
 
-      setPhase("Aufstieg");
+      setPhase("Ascent");
 
-      // Exhaust from nozzle
       const launchPhase = Math.min(1, idx0 / (flightPoints.length * 0.3));
       rocketLight.intensity = 2.5 * (1 - launchPhase * 0.7);
       const nozzleWorld = rocketGroup.position.clone().add(nozzleLocal);
@@ -815,9 +782,9 @@ function animate() {
       if (launchPhase < 0.15) spawnSmoke(nozzleWorld, 4);
 
     } else if (!separated) {
-      // ── SEPARATION at apogee ──
+      // ── SEPARATION ──
       separated = true;
-      setPhase("Stufentrennung");
+      setPhase("Separation");
 
       const rocketWorldPos  = rocketGroup.position.clone();
       const rocketWorldQuat = rocketGroup.quaternion.clone();
@@ -830,7 +797,6 @@ function animate() {
       topGroup.position.copy(rocketWorldPos);
       topGroup.quaternion.copy(rocketWorldQuat);
 
-      // Cansat starts exactly at data point
       cansatGroup.position.copy(cansatWorld);
       cansatGroup.quaternion.identity();
       meshCansat.visible = true;
@@ -845,19 +811,17 @@ function animate() {
       rocketLight.intensity = 0;
     }
 
-    // ── POST-SEPARATION: cansat always follows data exactly ──
+    // ── POST-SEPARATION: cansat follows data exactly ──
     if (separated) {
       const descending = idx0 > apogeeIdx &&
         flightPoints[idx0].y < flightPoints[Math.max(0, idx0 - 1)].y - 0.001;
 
-      // CanSat: EXACT position from data, always
       cansatGroup.position.copy(cansatWorld);
       cansatGroup.rotation.y += delta * 0.6;
 
-      if (descending) setPhase("CanSat Abstieg");
-      else if (!descending && idx0 >= separationIdx) setPhase("Ballistische Phase");
+      if (descending) setPhase("CanSat Descent");
+      else if (!descending && idx0 >= separationIdx) setPhase("Separation Phase");
 
-      // Top piece tumbles and falls
       if (!topLanded) {
         topGroup.position.addScaledVector(topVel, delta);
         topVel.y -= 5.5 * delta;
@@ -870,7 +834,6 @@ function animate() {
         }
       }
 
-      // Bottom piece tumbles and falls
       if (!bottomLanded) {
         rocketGroup.position.addScaledVector(bottomVel, delta);
         bottomVel.y -= 4.5 * delta;
@@ -886,7 +849,6 @@ function animate() {
 
   } else if (!animPlaying) {
     if (animProgress === 0) {
-      // Idle state: rocket sits on pad, slowly rotates
       rocketGroup.position.set(
         flightPoints[0].x,
         LAUNCH_ROCKET_Y,
@@ -895,7 +857,6 @@ function animate() {
       rocketGroup.rotation.set(0, rocketGroup.rotation.y + delta * 0.35, 0);
       rocketLight.intensity = 0;
     }
-    // When paused mid-flight: everything stays frozen.
   }
 
   updateParticles(animPlaying || animProgress === 0 ? delta : 0);
